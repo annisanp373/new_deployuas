@@ -1,18 +1,16 @@
-const mysql = require('mysql2')
+const express = require('express');
+const serverless = require('serverless-http');
+const app = express();
+const router = require('./routes/index'); // Import routes dari folder routes
+const { sequelize } = require('./models/index'); // Import Sequelize instance dari folder models
 
-const pool = mysql.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USERNAME,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_DBNAME,
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
-});
+app.use(express.json()); // Middleware untuk JSON
+app.use('/', router); // Gunakan router untuk menangani rute
 
-pool.getConnection((err, conn) =>{
-    if(err) console.log(err)
-    console.log("Connected successfully")
-})
+// Sinkronkan database ketika aplikasi dimulai
+sequelize.sync()
+  .then(() => console.log('Database synchronized'))
+  .catch(err => console.error('Error synchronizing database:', err));
 
-module.exports = pool.promise()
+// Export handler untuk serverless function
+module.exports.handler = serverless(app);

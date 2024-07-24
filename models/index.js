@@ -1,36 +1,18 @@
-const { Sequelize } = require('sequelize');
+const mysql = require('mysql2')
 
-// Konfigurasi koneksi Sequelize
-const sequelize = new Sequelize('db_uasdpsi6', 'root', '', {
-    host: 'localhost',
-    dialect: 'mysql'
+const pool = mysql.createPool({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USERNAME,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_DBNAME,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 });
 
-const User = require('./user')(sequelize);
-const Complaint = require('./complaint')(sequelize);
-const Response = require('./response')(sequelize);
+pool.getConnection((err, conn) =>{
+    if(err) console.log(err)
+    console.log("Connected successfully")
+})
 
-// Define associations
-Complaint.belongsTo(User, { foreignKey: 'studentId', as: 'student' });
-Complaint.belongsTo(User, { foreignKey: 'staffId', as: 'staff' });
-
-Response.belongsTo(Complaint, { foreignKey: 'complaintId', as: 'complaint' });
-Response.belongsTo(User, { foreignKey: 'staffId', as: 'staff' });
-
-Complaint.hasOne(Response, { foreignKey: 'complaintId', as: 'response' });
-
-// Sinkronkan model dengan database
-sequelize.sync()
-  .then(() => {
-    console.log('Database synchronized');
-  })
-  .catch(err => {
-    console.error('Error synchronizing database:', err);
-  });
-
-module.exports = {
-    sequelize,
-    User,
-    Complaint,
-    Response
-};
+module.exports = pool.promise()
